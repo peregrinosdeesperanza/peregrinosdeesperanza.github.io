@@ -216,7 +216,7 @@ body.lock .bar{display:none;}
 .tile b{display:block;font:700 1.1875rem/1.2 var(--sans);}
 .tile small{display:block;font:500 .9375rem/1.35 var(--sans);color:var(--muted);margin-top:2px;}
 .tile-destacado{border-color:var(--gold);background:var(--sky-soft);}
-.badge-km{flex:0 0 auto;text-align:center;font:800 .8125rem/1.15 var(--sans);color:var(--navy);background:var(--gold-light,#F2E6C4);border-radius:12px;padding:6px 9px;white-space:nowrap;}
+.badge-km{flex:0 0 68px;width:68px;box-sizing:border-box;align-self:center;margin-left:auto;text-align:center;font:800 .8125rem/1.15 var(--sans);color:var(--navy);background:var(--gold-light,#F2E6C4);border-radius:12px;padding:8px 6px;white-space:nowrap;}
 .one-km{margin-top:18px;text-align:center;font-weight:700;color:var(--navy);}
 
 /* Cantidad */
@@ -515,13 +515,13 @@ const SIN_RAMA = {id:'sin_rama', name:'Soy fiel, no pertenezco a una rama', shor
 const ALL_RAMAS = RAMAS.concat([SIN_RAMA]);
 
 const TIPOS = [
-  {id:'peregrinacion', name:'Yo hice la peregrinación', desc:'Caminaste el sábado 17 de octubre hasta el Santuario', short:'Peregrinación', factor:10, qLabel:'¿Cuántas personas de tu familia o grupo peregrinaron?', qMax:20},
-  {id:'rosario',   name:'Rosario',             desc:'Un rosario rezado',                        short:'Rosario'},
-  {id:'santisimo', name:'Visita al Santísimo', desc:'Un rato de oración ante el Santísimo',     short:'Santísimo'},
-  {id:'santuario', name:'Visita al Santuario', desc:'Una visita al Santuario',                  short:'Santuario'},
-  {id:'misa',      name:'Misa de semana',      desc:'Una misa entre semana',                    short:'Misa'},
-  {id:'oracion',   name:'Oración especial',    desc:'Una oración que ofrezcas por la peregrinación', short:'Oración'},
-  {id:'enfermo',   name:'Visita a un enfermo', desc:'Visitar o acompañar a una persona enferma', short:'Enfermos'}
+  {id:'peregrinacion', name:'Yo hice la peregrinación', desc:'Caminaste el sábado 17 de octubre hasta el Santuario', short:'Peregrinación', factor:10, qLabel:'¿Cuántas personas de tu familia o grupo peregrinaron?', qMax:20, destacado:true},
+  {id:'oracion',   name:'Oración especial',    desc:'Una oración que ofrezcas por la peregrinación', short:'Oración',   factor:1},
+  {id:'santisimo', name:'Visita al Santísimo', desc:'Un rato de oración ante el Santísimo',     short:'Santísimo',     factor:5},
+  {id:'misa',      name:'Misa de semana',      desc:'Una misa entre semana',                    short:'Misa',          factor:10},
+  {id:'rosario',   name:'Rosario',             desc:'Un rosario rezado',                        short:'Rosario',       factor:20},
+  {id:'enfermo',   name:'Visita a un enfermo', desc:'Visitar o acompañar a una persona enferma', short:'Enfermos',      factor:30},
+  {id:'santuario', name:'Visita al Santuario', desc:'Una visita al Santuario',                  short:'Santuario',     factor:40}
 ];
 
 // Hitos del camino (fracción del recorrido, calculados sobre la ruta real Tucumán → Vallendar)
@@ -859,7 +859,7 @@ function buildRamaOpts(){
   $('#opts-rama').innerHTML = ALL_RAMAS.map(r=>'<button class="opt'+(r.id==='sin_rama'?' aparte':'')+(myRama===r.id?' sel':'')+'" data-rama="'+r.id+'"><span>'+r.name+'</span>'+svgIcon(myRama===r.id?'check':'chev','currentColor',4)+'</button>').join('');
 }
 function buildTipoOpts(){
-  $('#opts-tipo').innerHTML = TIPOS.map(t=>'<button class="tile'+(t.factor?' tile-destacado':'')+'" data-tipo="'+t.id+'"><span class="ic">'+svgIcon(t.id,'#04427A',3)+'</span><span><b>'+t.name+'</b><small>'+t.desc+'</small></span>'+(t.factor?'<span class="badge-km">'+t.factor+' km<br>c/u</span>':'')+'</button>').join('');
+  $('#opts-tipo').innerHTML = TIPOS.map(t=>'<button class="tile'+(t.destacado?' tile-destacado':'')+'" data-tipo="'+t.id+'"><span class="ic">'+svgIcon(t.id,'#04427A',3)+'</span><span><b>'+t.name+'</b><small>'+t.desc+'</small></span><span class="badge-km">'+t.factor+' km</span></button>').join('');
 }
 function startSumar(){
   if(myRama){ openTipo(true); } else { pickReturn=false; buildRamaOpts(); push('rama'); }
@@ -879,7 +879,7 @@ function openCant(tipoId){
   curTipo=byId(TIPOS,tipoId); qty=1;
   $('#q-ic').innerHTML=svgIcon(curTipo.id,'#04427A',3); $('#q-name').textContent=curTipo.name;
   $('#cant-h2').textContent = curTipo.qLabel || '¿Cuántos sumás?';
-  const chipVals = curTipo.factor ? [1,2,3,4,5] : [1,2,3,5,10];
+  const chipVals = curTipo.destacado ? [1,2,3,4,5] : [1,2,3,5,10];
   $('#q-chips').innerHTML=chipVals.map(n=>'<button class="chip" data-n="'+n+'">'+n+'</button>').join('');
   $('#q-err').style.display='none'; $('#q-ok').disabled=false;
   updateQty(); push('cant');
@@ -889,7 +889,7 @@ function updateQty(){
   $('#q-num').textContent=qty;
   $('#q-minus').disabled = qty<=1; $('#q-plus').disabled = qty>=max;
   $$('#q-chips .chip').forEach(c=>c.classList.toggle('on', Number(c.dataset.n)===qty));
-  $('#q-eq').innerHTML = (curTipo&&curTipo.factor) ? (qty===1?'1 persona':qty+' personas')+' = '+fmt(km)+' km al camino' : (km===1 ? '= 1 km al camino' : '= '+fmt(km)+' km al camino');
+  $('#q-eq').innerHTML = (curTipo&&curTipo.destacado) ? (qty===1?'1 persona':qty+' personas')+' = '+fmt(km)+' km al camino' : (km===1 ? '= 1 km al camino' : '= '+fmt(km)+' km al camino');
   $('#q-ok').textContent = 'Sumar '+fmt(km)+' km';
 }
 async function confirmAporte(){
