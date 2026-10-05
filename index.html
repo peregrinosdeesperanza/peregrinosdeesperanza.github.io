@@ -215,6 +215,8 @@ body.lock .bar{display:none;}
 .tile .ic svg{width:34px;height:34px;}
 .tile b{display:block;font:700 1.1875rem/1.2 var(--sans);}
 .tile small{display:block;font:500 .9375rem/1.35 var(--sans);color:var(--muted);margin-top:2px;}
+.tile-destacado{border-color:var(--gold);background:var(--sky-soft);}
+.badge-km{flex:0 0 auto;text-align:center;font:800 .8125rem/1.15 var(--sans);color:var(--navy);background:var(--gold-light,#F2E6C4);border-radius:12px;padding:6px 9px;white-space:nowrap;}
 .one-km{margin-top:18px;text-align:center;font-weight:700;color:var(--navy);}
 
 /* Cantidad */
@@ -343,7 +345,7 @@ body.lock .bar{display:none;}
       <h2>¿Cómo se suma?</h2>
       <p class="sub">Todo lo que ofrezcas suma. Estos son los aportes:</p>
       <ul class="how" id="how"></ul>
-      <p class="rule"><span>Cada aporte equivale a 1 km</span></p>
+      <p class="rule"><span>Cada aporte suma km al camino</span></p>
     </div>
   </section>
 
@@ -381,7 +383,7 @@ body.lock .bar{display:none;}
     <h2 tabindex="-1">¿Qué querés sumar?</h2>
     <div class="who"><span>Sumás para: <b id="who-name"></b></span><button data-act="cambiar-rama">Cambiar</button></div>
     <div class="opts" id="opts-tipo"></div>
-    <p class="one-km">Cada aporte equivale a 1 km</p>
+    <p class="one-km">Cada aporte suma km al camino</p>
   </div>
 </section>
 
@@ -390,7 +392,7 @@ body.lock .bar{display:none;}
   <div class="v-head"><div class="wrap"><button class="back" data-act="back"><span data-i="back"></span>Volver</button></div></div>
   <div class="wrap v-body">
     <div class="qhead"><span class="ic" id="q-ic"></span><b id="q-name"></b></div>
-    <h2 style="margin-top:22px" tabindex="-1">¿Cuántos sumás?</h2>
+    <h2 id="cant-h2" style="margin-top:22px" tabindex="-1">¿Cuántos sumás?</h2>
     <div class="stepper">
       <button class="step" id="q-minus" aria-label="Uno menos"><span data-i="minus"></span></button>
       <div class="qnum" aria-live="polite"><b id="q-num">1</b></div>
@@ -513,6 +515,7 @@ const SIN_RAMA = {id:'sin_rama', name:'Soy fiel, no pertenezco a una rama', shor
 const ALL_RAMAS = RAMAS.concat([SIN_RAMA]);
 
 const TIPOS = [
+  {id:'peregrinacion', name:'Yo hice la peregrinación', desc:'Caminaste el sábado 17 de octubre hasta el Santuario', short:'Peregrinación', factor:10, qLabel:'¿Cuántas personas de tu familia o grupo peregrinaron?', qMax:20},
   {id:'rosario',   name:'Rosario',             desc:'Un rosario rezado',                        short:'Rosario'},
   {id:'santisimo', name:'Visita al Santísimo', desc:'Un rato de oración ante el Santísimo',     short:'Santísimo'},
   {id:'santuario', name:'Visita al Santuario', desc:'Una visita al Santuario',                  short:'Santuario'},
@@ -565,6 +568,7 @@ const cc = (x,y,r)=>'M'+(x-r)+','+y+'a'+r+','+r+' 0 1,0 '+(2*r)+',0a'+r+','+r+' 
 function ring(cx,cy,R,n,r,off){ let s=''; for(let i=0;i<n;i++){ const a=i/n*2*Math.PI-Math.PI/2+(off||0); s+=cc(+(cx+R*Math.cos(a)).toFixed(1),+(cy+R*Math.sin(a)).toFixed(1),r);} return s; }
 function rays(cx,cy,r1,r2,n){ let s=''; for(let i=0;i<n;i++){ const a=i/n*2*Math.PI; s+='M'+(cx+r1*Math.cos(a)).toFixed(1)+','+(cy+r1*Math.sin(a)).toFixed(1)+'L'+(cx+r2*Math.cos(a)).toFixed(1)+','+(cy+r2*Math.sin(a)).toFixed(1);} return s; }
 const ICON = {
+  peregrinacion: 'M16.00,2.35C21.25,2.35 23.35,8.65 22.82,13.90C22.30,18.10 20.20,19.57 16.00,19.57C11.80,19.57 9.70,18.10 9.18,13.90C8.65,8.65 10.75,2.35 16.00,2.35ZM11.48,25.87a4.51,4.83 0 1,0 9.03,0.00a4.51,4.83 0 1,0 -9.03,0.00M30.00,16.35C35.25,16.35 37.35,22.65 36.83,27.90C36.30,32.10 34.20,33.57 30.00,33.57C25.80,33.57 23.70,32.10 23.18,27.90C22.65,22.65 24.75,16.35 30.00,16.35ZM25.48,39.87a4.51,4.83 0 1,0 9.03,0.00a4.51,4.83 0 1,0 -9.03,0.00',
   rosario:   ring(24,18,12,9,2.5) + 'M24,32v5M24,37v9M20,41h8',
   santisimo: cc(24,19,8.5) + rays(24,19,12,17,8) + 'M24,14.5v9M19.5,19h9M24,28v10M18,43h12M20.5,38h7',
   santuario: 'M7,23L24,10L41,23M11,21V42H37V21M19.5,42V33a4.5,4.5 0 0,1 9,0V42M24,10V3M21,5.5h6',
@@ -583,7 +587,9 @@ const ICON = {
   img:       'M6,8H42V40H6ZM6,32L16,22L26,32L32,26L42,36' + cc(32,16,2.5),
   check:     'M9,25L20,36L39,12'
 };
+const ICON_FILL = {peregrinacion:1};
 function svgIcon(id,color,sw,cls){
+  if(ICON_FILL[id]) return '<svg viewBox="0 0 48 48" fill="'+(color||'currentColor')+'" stroke="none"'+(cls?' class="'+cls+'"':'')+' aria-hidden="true"><path d="'+ICON[id]+'"/></svg>';
   return '<svg viewBox="0 0 48 48" fill="none" stroke="'+(color||'currentColor')+'" stroke-width="'+(sw||3.4)+'" stroke-linecap="round" stroke-linejoin="round"'+(cls?' class="'+cls+'"':'')+' aria-hidden="true"><path d="'+ICON[id]+'"/></svg>';
 }
 $$('[data-i]').forEach(el=>{ el.innerHTML = svgIcon(el.dataset.i, 'currentColor', el.dataset.i==='plus'||el.dataset.i==='minus'?4.2:3.6); el.style.display='inline-flex'; });
@@ -853,7 +859,7 @@ function buildRamaOpts(){
   $('#opts-rama').innerHTML = ALL_RAMAS.map(r=>'<button class="opt'+(r.id==='sin_rama'?' aparte':'')+(myRama===r.id?' sel':'')+'" data-rama="'+r.id+'"><span>'+r.name+'</span>'+svgIcon(myRama===r.id?'check':'chev','currentColor',4)+'</button>').join('');
 }
 function buildTipoOpts(){
-  $('#opts-tipo').innerHTML = TIPOS.map(t=>'<button class="tile" data-tipo="'+t.id+'"><span class="ic">'+svgIcon(t.id,'#04427A',3)+'</span><span><b>'+t.name+'</b><small>'+t.desc+'</small></span></button>').join('');
+  $('#opts-tipo').innerHTML = TIPOS.map(t=>'<button class="tile'+(t.factor?' tile-destacado':'')+'" data-tipo="'+t.id+'"><span class="ic">'+svgIcon(t.id,'#04427A',3)+'</span><span><b>'+t.name+'</b><small>'+t.desc+'</small></span>'+(t.factor?'<span class="badge-km">'+t.factor+' km<br>c/u</span>':'')+'</button>').join('');
 }
 function startSumar(){
   if(myRama){ openTipo(true); } else { pickReturn=false; buildRamaOpts(); push('rama'); }
@@ -872,20 +878,24 @@ function setRama(id){
 function openCant(tipoId){
   curTipo=byId(TIPOS,tipoId); qty=1;
   $('#q-ic').innerHTML=svgIcon(curTipo.id,'#04427A',3); $('#q-name').textContent=curTipo.name;
-  $('#q-chips').innerHTML=[1,2,3,5,10].map(n=>'<button class="chip" data-n="'+n+'">'+n+'</button>').join('');
+  $('#cant-h2').textContent = curTipo.qLabel || '¿Cuántos sumás?';
+  const chipVals = curTipo.factor ? [1,2,3,4,5] : [1,2,3,5,10];
+  $('#q-chips').innerHTML=chipVals.map(n=>'<button class="chip" data-n="'+n+'">'+n+'</button>').join('');
   $('#q-err').style.display='none'; $('#q-ok').disabled=false;
   updateQty(); push('cant');
 }
 function updateQty(){
+  const max = (curTipo&&curTipo.qMax) || QMAX, km = qty*((curTipo&&curTipo.factor)||1);
   $('#q-num').textContent=qty;
-  $('#q-minus').disabled = qty<=1; $('#q-plus').disabled = qty>=QMAX;
+  $('#q-minus').disabled = qty<=1; $('#q-plus').disabled = qty>=max;
   $$('#q-chips .chip').forEach(c=>c.classList.toggle('on', Number(c.dataset.n)===qty));
-  $('#q-eq').innerHTML = qty===1 ? '= 1 km al camino' : '= '+qty+' km al camino';
-  $('#q-ok').textContent = 'Sumar '+qty+' km';
+  $('#q-eq').innerHTML = (curTipo&&curTipo.factor) ? (qty===1?'1 persona':qty+' personas')+' = '+fmt(km)+' km al camino' : (km===1 ? '= 1 km al camino' : '= '+fmt(km)+' km al camino');
+  $('#q-ok').textContent = 'Sumar '+fmt(km)+' km';
 }
 async function confirmAporte(){
   const btn=$('#q-ok'); btn.disabled=true; btn.textContent='Guardando…'; $('#q-err').style.display='none';
-  const err=await pushAporte(myRama,curTipo.id,qty);
+  const km = qty*(curTipo.factor||1);
+  const err=await pushAporte(myRama,curTipo.id,km);
   if(err){
     btn.disabled=false; updateQty();
     const e=$('#q-err'); e.textContent='No pudimos guardar tu aporte. Revisá tu conexión e intentá de nuevo.'; e.style.display='block';
@@ -893,10 +903,10 @@ async function confirmAporte(){
     return;
   }
   // se refleja al instante y luego se confirma con la base de datos
-  state.byRama[myRama]=(state.byRama[myRama]||0)+qty; state.byTipo[curTipo.id]=(state.byTipo[curTipo.id]||0)+qty; state.total+=qty; state.loaded=true; state.failed=false;
-  const myTotal=mine.add(qty);
+  state.byRama[myRama]=(state.byRama[myRama]||0)+km; state.byTipo[curTipo.id]=(state.byTipo[curTipo.id]||0)+km; state.total+=km; state.loaded=true; state.failed=false;
+  const myTotal=mine.add(km);
   renderAll();
-  $('#g-line').textContent='Sumaste '+qty+' km';
+  $('#g-line').textContent='Sumaste '+fmt(km)+' km';
   const falta=Math.max(0,CFG.TOTAL_KM-state.total);
   $('#g-sub').textContent = falta>0 ? 'Entre todos ya caminamos '+fmt(state.total)+' km. Faltan '+fmt(falta)+' km para llegar a Schoenstatt.' : '¡Llegamos al Santuario de Schoenstatt!';
   replace('gracias');
@@ -947,7 +957,7 @@ function walk(c,fn,n,frac,cDone,cTodo,sc,aDone,aTodo){
   for(let i=0;i<n;i++){ const t=(i+.5)/n, p=fn(t), q=fn(Math.min(1,t+.01)), r=fn(Math.max(0,t-.01)); const ang=Math.atan2(q.x-r.x,-(q.y-r.y))*180/Math.PI; const side=i%2?1:-1, rad=ang*Math.PI/180;
     huella(c,p.x+side*sc*8*Math.cos(rad),p.y+side*sc*8*Math.sin(rad),ang+side*7,sc,t<=frac?cDone:cTodo,t<=frac?aDone:aTodo); }
 }
-function icon(c,id,cx,cy,size,col,lw){ c.save(); c.translate(cx-size/2,cy-size/2); c.scale(size/48,size/48); c.strokeStyle=col; c.lineWidth=lw||3.4; c.lineCap='round'; c.lineJoin='round'; c.stroke(new Path2D(ICON[id])); c.restore(); }
+function icon(c,id,cx,cy,size,col,lw){ c.save(); c.translate(cx-size/2,cy-size/2); c.scale(size/48,size/48); const pth=new Path2D(ICON[id]); if(ICON_FILL[id]){ c.fillStyle=col; c.fill(pth); } else { c.strokeStyle=col; c.lineWidth=lw||3.4; c.lineCap='round'; c.lineJoin='round'; c.stroke(pth); } c.restore(); }
 function shareUrl(){ if(CFG.SHARE_URL) return CFG.SHARE_URL; return /^https?:/.test(location.protocol) ? location.origin+location.pathname : ''; }
 function shortUrl(){ return shareUrl().replace(/^https?:\/\//,'').replace(/\/$/,''); }
 function drawImg(c,im,x,y,h){ const w=h*im.width/im.height; c.drawImage(im,x,y,w,h); return w; }
@@ -970,9 +980,9 @@ const DESIGNS = [
     T(c,'Con María, peregrinos de esperanza',S.W/2,y,FSC(v?62:58),SKYL); y+=v?190:170;
     const s1=fit(c,'Sumá tus km',940,v?190:170,800); T(c,'Sumá tus km',S.W/2,y,FS(800,s1),'#fff'); y+=v?110:96;
     T(c,'al capital de gracias',S.W/2,y,FS(800,v?76:68),GOLDL); y+=v?100:84;
-    y=para(c,'Cada rosario, visita, misa u oración vale 1 km en el camino hasta el Santuario de Schoenstatt, en Alemania.',S.W/2,y,880,FS(500,v?44:40),'#fff',v?62:56); y+=v?110:92;
-    const n=TIPOS.length, cw=160, x0=(S.W-n*cw)/2+cw/2;
-    TIPOS.forEach((t,i)=>{ const x=x0+i*cw; c.fillStyle=CREAM; c.beginPath(); c.arc(x,y,54,0,7); c.fill(); icon(c,t.id,x,y,64,NAVY,3.2); T(c,t.short,x,y+92,FS(700,24),SKYL); });
+    y=para(c,'Cada rosario, visita, misa u oración suma km en el camino hasta el Santuario de Schoenstatt, en Alemania.',S.W/2,y,880,FS(500,v?44:40),'#fff',v?62:56); y+=v?110:92;
+    const n=TIPOS.length, cw=Math.min(160,(S.W-80)/n), x0=(S.W-n*cw)/2+cw/2, cr=Math.min(54,cw*0.34), isz=cr*1.19;
+    TIPOS.forEach((t,i)=>{ const x=x0+i*cw; c.fillStyle=CREAM; c.beginPath(); c.arc(x,y,cr,0,7); c.fill(); icon(c,t.id,x,y,isz,NAVY,3.2); T(c,t.short,x,y+cr+38,FS(700,Math.min(24,cw*.16)),SKYL); });
     ribbon(c,S,S.H-(v?250:160),v?130:110,'Sábado 17 de octubre · 16:00 hs',v?52:46);
     footerUrl(c,S,D,SKYL,S.H-(v?86:36));
  }},
@@ -1159,7 +1169,7 @@ document.addEventListener('click',e=>{
   const sg=e.target.closest('#pv-seg button'); if(sg){ pv.fmt=sg.dataset.fmt; paintPreview(); return; }
 });
 $('#q-minus').addEventListener('click',()=>{ qty=Math.max(1,qty-1); updateQty(); });
-$('#q-plus').addEventListener('click',()=>{ qty=Math.min(QMAX,qty+1); updateQty(); });
+$('#q-plus').addEventListener('click',()=>{ qty=Math.min((curTipo&&curTipo.qMax)||QMAX,qty+1); updateQty(); });
 $('#q-ok').addEventListener('click',confirmAporte);
 $('#pv-share').addEventListener('click',doShare);
 $('#pv-save').addEventListener('click',doSave);
